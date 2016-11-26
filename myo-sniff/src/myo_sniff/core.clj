@@ -55,7 +55,7 @@
 
 (defn start!
   []
-  (let [file "a-b-nt-nv.log"
+  (let [file "a-b-n-rand-30s.log"
         _ (open-writer! file)
         socket (ws/connect "ws://127.0.0.1:10138/myo/3"
                            :on-receive (on-receive-fn file))]
@@ -68,8 +68,8 @@
   (ws/close socket)
   (close-writer!))
 
-(comment (def token (start!)))
-(comment (stop! token))
+;; (def token (start!))
+;; (stop! token)
 
 (defn write-csv
   [file headers data]
