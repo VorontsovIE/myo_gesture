@@ -1,6 +1,7 @@
 (ns myo-sniff.events
   (:require [cheshire.core :as json]
-            [clojure.core.async :as a :refer [go >! <! >!! <!!]]))
+            [clojure.core.async :as a :refer [go >! <! >!! <!!]]
+            [clojure.java.io :as io]))
 
 (defn remove-duplicates
   [xs]
@@ -67,41 +68,54 @@
     1 "b"
     2 "n"}))
 
-(let [g-chan (a/chan 10 group-events-xform)
-      r-chan (a/chan 10)]
-  (a/go-loop []
-    (if-let [grouped (<! g-chan)]
-      (do
-        (>! r-chan (predict grouped))
-        (recur))
-      (do
-        (a/close! r-chan)
-        (prn :g-loop-closed))))
-  (a/go-loop []
-    (if-let [result (<! r-chan)]
-      (do
-        (prn {:r result})
-        (recur))
-      (prn :r-loop-closed)))
-  (->>
-   (slurp "myo.log")
-   clojure.string/split-lines
-   (a/onto-chan g-chan)
-   ))
+(defn start-consumer
+  []
+  (let [g-chan (a/chan 10 group-events-xform)
+        r-chan (a/chan 10)]
+    (a/go-loop []
+      (if-let [grouped (<! g-chan)]
+        (do
+          (>! r-chan (predict grouped))
+          (recur))
+        (do
+          (a/close! r-chan)
+          (prn :g-loop-closed))))
+    (let [w (io/writer "out.txt")
+          start (System/currentTimeMillis)]
+      (a/go-loop []
+        (if-let [result (<! r-chan)]
+          (do
+            (.write w (str result "\n"))
+            (recur))
+          (do
+            (prn :r-loop-closed)
+            (prn (str
+                  "Elapsed: "
+                  (/ (- (System/currentTimeMillis) start) 1000.0)
+                  " s"))
+            (.close w)))))
+    [g-chan r-chan]))
 
-(->>
- (slurp "myo.log")
- clojure.string/split-lines
- (take 100)
- (into [] group-events-xform)
- ;;remove-duplicates
- ;; remove-between-locks
- ;; (filter #(-> % :type (= "emg")))
- (take 30)
- clojure.pprint/pprint
- ;;(map #(concat [(Long. (:timestamp %))] (:emg %)))
- ;;(write-csv "a.sher.csv" headers)
- )
+(comment (let [[input-chan _] (start-consumer)]
+   (->>
+    (slurp "myo.log")
+    clojure.string/split-lines
+    (a/onto-chan input-chan)
+    )))
+
+(comment (->>
+  (slurp "myo.log")
+  clojure.string/split-lines
+  (take 100)
+  (into [] group-events-xform)
+  ;;remove-duplicates
+  ;; remove-between-locks
+  ;; (filter #(-> % :type (= "emg")))
+  (take 30)
+  clojure.pprint/pprint
+  ;;(map #(concat [(Long. (:timestamp %))] (:emg %)))
+  ;;(write-csv "a.sher.csv" headers)
+  ))
 
 
 
