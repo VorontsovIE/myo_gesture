@@ -55,7 +55,7 @@
 
 (defn start!
   []
-  (let [file "myo.log"
+  (let [file "a-b-nt-nv.log"
         _ (open-writer! file)
         socket (ws/connect "ws://127.0.0.1:10138/myo/3"
                            :on-receive (on-receive-fn file))]
@@ -68,8 +68,11 @@
   (ws/close socket)
   (close-writer!))
 
-(comment (def token (start!)))
-(comment (stop! token))
+(comment )
+(comment )
+
+(def token (start!))
+(stop! token)
 
 (defn write-csv
   [file headers data]
@@ -85,13 +88,41 @@
   (into [])
   (concat ["timestamp"])))
 
+(defn remove-between-locks
+  [xs]
+  (->>
+   xs
+   (reduce
+    (fn [[rs unlocked?] {:keys [type] :as e}]
+      (cond
+        (= type "locked") [rs false]
+        (= type "unlocked") [rs true]
+        unlocked? [(conj rs e) true]
+        :else [rs false]))
+    [[] false])
+   first))
 
-(comment (->>
-  (slurp "myo.log")
-  clojure.string/split-lines
-  (map #(json/decode % true))
-  (filter #(-> % first (= "event")))
-  (map second)
-  (filter #(-> % :type (= "emg")))
-  (map #(concat [(Long. (:timestamp %))] (:emg %)))
-  (write-csv "a.csv" headers)))
+(defn remove-duplicates
+  [xs]
+  (->>
+   xs
+   (group-by :timestamp)
+   vals
+   (map first)))
+
+
+
+
+(->>
+ (slurp "myo.log")
+ clojure.string/split-lines
+ (map #(json/decode % true))
+ (filter #(-> % first (= "event")))
+ (map second)
+ remove-duplicates
+ remove-between-locks
+ (filter #(-> % :type (= "emg")))
+ ;;(take 2)
+ (map #(concat [(Long. (:timestamp %))] (:emg %)))
+ (write-csv "a.sher.csv" headers))
+
