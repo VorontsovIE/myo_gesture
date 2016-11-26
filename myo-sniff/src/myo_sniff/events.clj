@@ -58,9 +58,41 @@
    (map (partial reduce sum-vec))
    ))
 
+(defn predict
+  [vec]
+  (Thread/sleep 100)
+  (->>
+   (rand-int 3)
+   {0 "a"
+    1 "b"
+    2 "n"}))
+
+(let [g-chan (a/chan 10 group-events-xform)
+      r-chan (a/chan 10)]
+  (a/go-loop []
+    (if-let [grouped (<! g-chan)]
+      (do
+        (>! r-chan (predict grouped))
+        (recur))
+      (do
+        (a/close! r-chan)
+        (prn :g-loop-closed))))
+  (a/go-loop []
+    (if-let [result (<! r-chan)]
+      (do
+        (prn {:r result})
+        (recur))
+      (prn :r-loop-closed)))
+  (->>
+   (slurp "myo.log")
+   clojure.string/split-lines
+   (a/onto-chan g-chan)
+   ))
+
 (->>
  (slurp "myo.log")
  clojure.string/split-lines
+ (take 100)
  (into [] group-events-xform)
  ;;remove-duplicates
  ;; remove-between-locks
