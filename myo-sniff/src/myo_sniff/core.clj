@@ -1,7 +1,8 @@
 (ns myo-sniff.core
   (:require [gniazdo.core :as ws]
             [clojure.java.io :as io]
-            [cheshire.core :as json]))
+            [cheshire.core :as json]
+            [clojure.string :as str]))
 
 (defn foo
   "I don't do a whole lot."
@@ -69,3 +70,28 @@
 
 (comment (def token (start!)))
 (comment (stop! token))
+
+(defn write-csv
+  [file headers data]
+  (spit file (str (str/join "," headers) "\n"))
+  (with-open [w (io/writer file :append true)]
+   (doseq [row data]
+     (.write w (str (str/join "," row) "\n")))))
+
+(def headers
+  (->>
+  (range 1 9)
+  (map #(str "emg" %))
+  (into [])
+  (concat ["timestamp"])))
+
+
+(comment (->>
+  (slurp "myo.log")
+  clojure.string/split-lines
+  (map #(json/decode % true))
+  (filter #(-> % first (= "event")))
+  (map second)
+  (filter #(-> % :type (= "emg")))
+  (map #(concat [(Long. (:timestamp %))] (:emg %)))
+  (write-csv "a.csv" headers)))
