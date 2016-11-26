@@ -51,7 +51,7 @@
 
 (defn start!
   []
-  (let [file "r-n.log"
+  (let [file "raw-60s.log"
         _ (open-writer! file)
         [input-ch _] (e/start-consumer)
         socket (ws/connect "ws://127.0.0.1:10138/myo/3"
@@ -68,7 +68,7 @@
   (a/close! input-ch))
 
 (comment (let [token (start!)]
-   (Thread/sleep (* 30 1000))
+   (Thread/sleep (* 60 1000))
    (stop! token)))
 
 (defn write-csv
