@@ -37,6 +37,12 @@
              (xf result new-buffer)
              result)))))))
 
+(def flat-one-level (partial mapcat identity))
+
+(defn sum-vec
+  [xs1 xs2]
+  (map + xs1 xs2))
+
 (def group-events-xform
   (comp
    (map #(json/decode % true))
@@ -47,11 +53,10 @@
    (map (partial map #(Math/abs %)))
    (buffer conj-slice 10)
    (buffer conj-slide 3)
-   (map flatten)
-   (map (partial reduce +))
-  ))
-
-(map #(Math/abs %) (range 2))
+   (map flat-one-level)
+   (map (partial into []))
+   (map (partial reduce sum-vec))
+   ))
 
 (->>
  (slurp "myo.log")
@@ -65,5 +70,6 @@
  ;;(map #(concat [(Long. (:timestamp %))] (:emg %)))
  ;;(write-csv "a.sher.csv" headers)
  )
+
 
 
