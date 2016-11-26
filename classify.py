@@ -2,6 +2,7 @@ import numpy
 import sklearn
 from sklearn import svm
 from sklearn.tree import DecisionTreeClassifier
+from sklearn import preprocessing
 
 def read_train_csv(filename):
 	with open(filename) as f:
@@ -24,13 +25,19 @@ def read_unlabeled_csv(filename):
 		return numpy.array( data )
 
 train = read_train_csv('train.tsv')
+# scaler = preprocessing.StandardScaler().fit(train['data'])
 # classifier = sklearn.svm.LinearSVC()
 classifier = DecisionTreeClassifier(random_state=13)
-classifier.fit(train['data'], train['labels'])
+# classifier.fit( scaler.transform(train['data']), train['labels'])
+for i in range(1):
+	classifier.fit( train['data'], train['labels'])
 # classifier.fit(train['data'][0::2], train['labels'][0::2])
 # for real, predicted in zip(train['labels'][1::2], classifier.predict(train['data'][1::2])):
 # 	print(real, predicted)
 
 to_predict = read_unlabeled_csv('unlabbeled.tsv')
+# for predicted in classifier.predict(scaler.transform(to_predict)):
+# 	print(predicted)
+
 for predicted in classifier.predict(to_predict):
 	print(predicted)

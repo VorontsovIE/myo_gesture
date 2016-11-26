@@ -102,7 +102,7 @@ sensor_tracks = emg_events.map{|ev| ev.data[:emg].map(&:abs) }.transpose
 
 # if filter 
   sensor_tracks = sensor_tracks
-                      # .map{|series| series.median_filter(31) }
+                    # .map{|series| series.each_cons(60).map{|elems| elems.sum } }
                     # .map{|series| series.median_filter(9) }
                     # .map{|series| series.each_cons(5).map{|elems| elems.mean_geometric} }
                     # .map{|series| series.truncate(lower_threshold: series.quantile(0.6)) } 
@@ -110,13 +110,15 @@ sensor_tracks = emg_events.map{|ev| ev.data[:emg].map(&:abs) }.transpose
 
 sensor_tracks
   .map{|series|
+    series
     series.each_slice(30).each_cons(3).map(&:flatten).map(&:sum) # 900ms with 300ms shifts
     # series.each_slice(60).map(&:sum).each_cons(3).to_a # 900ms with 300ms shifts
   }
   .transpose
   .each_with_index{|tracks_snapshot, ind|
     tracks_snapshot = tracks_snapshot.flatten
-    tracks_snapshot = [*tracks_snapshot.normalized, tracks_snapshot.l2_norm, tracks_snapshot.l1_norm]
+    tracks_snapshot = tracks_snapshot.normalized
+    # tracks_snapshot = [*tracks_snapshot.normalized, tracks_snapshot.l2_norm, tracks_snapshot.l1_norm]
     if letter_label
       puts [*tracks_snapshot, letter_label].join("\t")
     else
