@@ -68,11 +68,8 @@
   (ws/close socket)
   (close-writer!))
 
-(comment )
-(comment )
-
-(def token (start!))
-(stop! token)
+(comment (def token (start!)))
+(comment (stop! token))
 
 (defn write-csv
   [file headers data]
@@ -87,42 +84,4 @@
   (map #(str "emg" %))
   (into [])
   (concat ["timestamp"])))
-
-(defn remove-between-locks
-  [xs]
-  (->>
-   xs
-   (reduce
-    (fn [[rs unlocked?] {:keys [type] :as e}]
-      (cond
-        (= type "locked") [rs false]
-        (= type "unlocked") [rs true]
-        unlocked? [(conj rs e) true]
-        :else [rs false]))
-    [[] false])
-   first))
-
-(defn remove-duplicates
-  [xs]
-  (->>
-   xs
-   (group-by :timestamp)
-   vals
-   (map first)))
-
-
-
-
-(->>
- (slurp "myo.log")
- clojure.string/split-lines
- (map #(json/decode % true))
- (filter #(-> % first (= "event")))
- (map second)
- remove-duplicates
- remove-between-locks
- (filter #(-> % :type (= "emg")))
- ;;(take 2)
- (map #(concat [(Long. (:timestamp %))] (:emg %)))
- (write-csv "a.sher.csv" headers))
 
