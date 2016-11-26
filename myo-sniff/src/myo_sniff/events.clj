@@ -52,7 +52,7 @@
    (filter #(-> % :type (= "emg")))
    (map :emg)
    (map (partial map #(Math/abs %)))
-   (buffer conj-slice 10)
+   (buffer conj-slice 30)
    (buffer conj-slide 3)
    (map flat-one-level)
    (map (partial into []))

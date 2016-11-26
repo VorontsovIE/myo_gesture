@@ -2,7 +2,10 @@
   (:require [gniazdo.core :as ws]
             [clojure.java.io :as io]
             [cheshire.core :as json]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [clojure.core.async :as a]
+
+            [myo-sniff.events :as e]))
 
 (defn foo
   "I don't do a whole lot."
@@ -23,8 +26,10 @@
     (reset! writer nil)))
 
 (defn on-receive-fn
-  [file]
-  (if-let [w @writer]
+  [chan]
+  (fn [data]
+    (a/go (a/>! chan data)))
+  #_(if-let [w @writer]
     (fn [data]
       (.write w (str data "\n")))
     (throw (Exception. "Writer is closed."))))
@@ -57,16 +62,23 @@
   []
   (let [file "a-b-n-rand-30s.log"
         _ (open-writer! file)
+        [input-ch _] (e/start-consumer)
         socket (ws/connect "ws://127.0.0.1:10138/myo/3"
-                           :on-receive (on-receive-fn file))]
+                           :on-receive (on-receive-fn input-ch))]
     ;;(ws/send-msg socket locking-policy->none)
     (ws/send-msg socket stream-emg->enabled)
-    socket))
+    [socket input-ch]))
 
 (defn stop!
-  [socket]
+  [[socket input-ch]]
   (ws/close socket)
-  (close-writer!))
+  (Thread/sleep 100)
+  (close-writer!)
+  (a/close! input-ch))
+
+(comment (let [token (start!)]
+   (Thread/sleep (* 10 1000))
+   (stop! token)))
 
 ;; (def token (start!))
 ;; (stop! token)
