@@ -1,5 +1,6 @@
 require 'json'
 require 'fileutils'
+require 'optparse'
 
 MyoEvent = Struct.new(:type, :timestamp, :myo, :data) do
   def self.from_hash(hsh)
@@ -39,12 +40,24 @@ class Array
     result
   end
 
+  def l1_norm
+    map(&:abs).sum
+  end
+
+  def l2_norm
+    map{|x| x**2 }.sum ** 0.5
+  end
+
+  def normalized
+    s = l2_norm
+    map{|x| x.to_f / s}
+  end
+
   def to_pvalues
     each_with_index.sort_by{|val, ind| val }.each_with_index.sort_by{|(val, ind), sorted_ind| ind }.map{|(val, ind), sorted_ind| sorted_ind.to_f / size }
   end
 end
 
-raise 'Specify filename with event log' unless event_log_filename = ARGV[0]
 
 def store_emg_tsv(events, filename, sensors: 0...8)
   emg_events = events.select(&:emg?)
@@ -60,7 +73,13 @@ def store_emg_tsv(events, filename, sensors: 0...8)
   }
 end
 
+filter = false
+OptionParser.new{|opt|
+  opt.on('--filter') { filter = true }
+}.parse!(ARGV)
 
+raise 'Specify filename with event log' unless event_log_filename = ARGV[0]
+letter_label = ARGV[1]
 
 
 lns = File.readlines(event_log_filename)
@@ -80,15 +99,27 @@ emg_timestamps = emg_events.map(&:timestamp)
 
 sensor_tracks = emg_events.map{|ev| ev.data[:emg].map(&:abs) }.transpose
 
-# sensor_tracks
-#   .map{|series| series.median_filter(7) }
-#   .map{|series| series.truncate(lower_threshold: series.quantile(0.95)) } 
-#   .map{|series| series.each_cons(20).map{|elems| elems.mean_geometric} }
+
+# if filter 
+  sensor_tracks = sensor_tracks
+                      # .map{|series| series.median_filter(31) }
+                    # .map{|series| series.median_filter(9) }
+                    # .map{|series| series.each_cons(5).map{|elems| elems.mean_geometric} }
+                    # .map{|series| series.truncate(lower_threshold: series.quantile(0.6)) } 
+# end
+
 sensor_tracks
   .map{|series|
     series.each_slice(30).each_cons(3).map(&:flatten).map(&:sum) # 900ms with 300ms shifts
+    # series.each_slice(60).map(&:sum).each_cons(3).to_a # 900ms with 300ms shifts
   }
   .transpose
   .each_with_index{|tracks_snapshot, ind|
-    puts tracks_snapshot.join("\t")
+    tracks_snapshot = tracks_snapshot.flatten
+    tracks_snapshot = [*tracks_snapshot.normalized, tracks_snapshot.l2_norm, tracks_snapshot.l1_norm]
+    if letter_label
+      puts [*tracks_snapshot, letter_label].join("\t")
+    else
+      puts tracks_snapshot.join("\t")
+    end
   }
