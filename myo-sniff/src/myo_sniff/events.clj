@@ -42,11 +42,16 @@
    (map #(json/decode % true))
    (filter #(-> % first (= "event")))
    (map second)
-   (buffer conj-slice 30)
+   (filter #(-> % :type (= "emg")))
+   (map :emg)
+   (map (partial map #(Math/abs %)))
+   (buffer conj-slice 10)
    (buffer conj-slide 3)
    (map flatten)
-   #_(partial partition 3 1)))
+   (map (partial reduce +))
+  ))
 
+(map #(Math/abs %) (range 2))
 
 (->>
  (slurp "myo.log")
@@ -56,6 +61,7 @@
  ;; remove-between-locks
  ;; (filter #(-> % :type (= "emg")))
  (take 30)
+ clojure.pprint/pprint
  ;;(map #(concat [(Long. (:timestamp %))] (:emg %)))
  ;;(write-csv "a.sher.csv" headers)
  )
