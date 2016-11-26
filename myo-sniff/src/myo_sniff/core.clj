@@ -25,14 +25,17 @@
     (.close @writer)
     (reset! writer nil)))
 
-(defn on-receive-fn
-  [chan]
-  (fn [data]
-    (a/go (a/>! chan data)))
-  #_(if-let [w @writer]
+(defn put-file
+  []
+  (if-let [w @writer]
     (fn [data]
       (.write w (str data "\n")))
     (throw (Exception. "Writer is closed."))))
+
+(defn put-chan
+  [chan]
+  (fn [data]
+    (a/go (a/>! chan data))))
 
 (comment
   (open-writer! "myo.log")
@@ -46,25 +49,13 @@
 (def stream-emg->enabled (->command "set_stream_emg" {:type "enabled"}))
 (def locking-policy->none (->command "set_locking_policy" {:type "none"}))
 
-(comment
-  (let [file "myo.log"
-        _ (open-writer! file)
-        socket (ws/connect "ws://127.0.0.1:10138/myo/3"
-                           :on-receive (on-receive-fn file))]
-    ;;(ws/send-msg socket locking-policy->none)
-    (ws/send-msg socket stream-emg->enabled)
-    (Thread/sleep (* 10 1000))
-    (ws/close socket)
-    (close-writer!)))
-
-
 (defn start!
   []
-  (let [file "a-b-n-rand-30s.log"
+  (let [file "r-n.log"
         _ (open-writer! file)
         [input-ch _] (e/start-consumer)
         socket (ws/connect "ws://127.0.0.1:10138/myo/3"
-                           :on-receive (on-receive-fn input-ch))]
+                           :on-receive (put-file))]
     ;;(ws/send-msg socket locking-policy->none)
     (ws/send-msg socket stream-emg->enabled)
     [socket input-ch]))
@@ -77,11 +68,8 @@
   (a/close! input-ch))
 
 (comment (let [token (start!)]
-   (Thread/sleep (* 10 1000))
+   (Thread/sleep (* 30 1000))
    (stop! token)))
-
-;; (def token (start!))
-;; (stop! token)
 
 (defn write-csv
   [file headers data]
