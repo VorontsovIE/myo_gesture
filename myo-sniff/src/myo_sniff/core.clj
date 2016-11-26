@@ -15,9 +15,9 @@
 (defonce writer (atom nil))
 
 (defn open-writer!
-  [file]
+  [file append?]
   (when-not @writer
-    (reset! writer (io/writer file))))
+    (reset! writer (io/writer file :append append?))))
 
 (defn close-writer!
   []
@@ -37,11 +37,6 @@
   (fn [data]
     (a/go (a/>! chan data))))
 
-(comment
-  (open-writer! "myo.log")
-  (.write @writer "halo!")
-  (close-writer!))
-
 (defn ->command
   [name params]
   (json/encode ["command" (merge {:command name :myo 0} params)]))
@@ -51,8 +46,8 @@
 
 (defn start!
   []
-  (let [file "a-b-nt-nv-40s.log"
-        _ (open-writer! file)
+  (let [file "../samples/b/raw-5s.log"
+        _ (open-writer! file true)
         [input-ch _] (e/start-consumer)
         socket (ws/connect "ws://127.0.0.1:10138/myo/3"
                            :on-receive (put-file))]
@@ -68,7 +63,7 @@
   (a/close! input-ch))
 
 (comment (let [token (start!)]
-   (Thread/sleep (* 40 1000))
+   (Thread/sleep (* 5 1000))
    (stop! token)))
 
 (defn write-csv
