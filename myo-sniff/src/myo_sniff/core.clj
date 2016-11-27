@@ -87,9 +87,9 @@
   (a/close! input-ch))
 
 '(let [token (start-web! e/predict-endpoint)]
-  (Thread/sleep (* 15 1000))
+  (Thread/sleep (* 45 1000))
   (stop! token))
 
 '(let [token (start-web! e/learn-endpoint)]
-   (Thread/sleep (* 30 1000))
+   (Thread/sleep (* 3 1000))
    (stop! token))

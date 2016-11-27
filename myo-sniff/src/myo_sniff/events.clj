@@ -81,10 +81,10 @@
    (map :emg)
    (map (partial map #(Math/abs %)))
    (buffer conj-slice 30)
-   (map (partial reduce sum-vec))
    (buffer conj-slide 3)
    (map flat-one-level)
-   ;; (map (partial into []))
+   (map (partial into []))
+   (map (partial reduce sum-vec))
    ))
 
 #_(->>

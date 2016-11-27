@@ -45,10 +45,26 @@ def predict(query):
     finally:
         lock.release()
 
+import random
+data_buffer = []
+label_buffer = []
+fitting_iter = 0
+
 def partial_fit(query, letter):
+    global fitting_iter
     lock.acquire()
     try:
+        if len(data_buffer) < 15:
+            data_buffer.append(query)
+            label_buffer.append(letter)
+        else:
+            index = random.randint(0, len(data_buffer) - 1)
+            data_buffer[index] = query
+            label_buffer[index] = letter
         classifier.partial_fit(numpy.array([query]), numpy.array([letter]), classes=all_letters)
+        fitting_iter += 1
+        if fitting_iter % 10 == 0:
+            classifier.partial_fit(numpy.array(data_buffer), numpy.array(label_buffer), classes=all_letters)
     finally:
         lock.release()
 
