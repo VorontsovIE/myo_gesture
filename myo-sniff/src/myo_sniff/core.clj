@@ -73,8 +73,8 @@
    (stop! token)))
 
 (defn start-web!
-  []
-  (let [[input-ch out-ch] (e/start-consumer e/predict-endpoint 15)
+  [endpoint]
+  (let [[input-ch out-ch] (e/start-consumer endpoint 15)
         server (web/websocket-consumer out-ch)
         socket (socket (put-chan input-ch))]
     (ws/send-msg socket stream-emg->enabled)
@@ -86,6 +86,6 @@
   (Thread/sleep 100)
   (a/close! input-ch))
 
-'(let [token (start-web!)]
-  (Thread/sleep (* 20 1000))
+'(let [token (start-web! e/predict-endpoint)]
+  (Thread/sleep (* 30 1000))
   (stop! token))
