@@ -1,4 +1,4 @@
-# MSLR -- Myo sign language recognition
+# MSLR -- Myo Sign Language Recognition
 
 ## Idea
 
