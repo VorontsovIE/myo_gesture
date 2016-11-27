@@ -48,7 +48,7 @@ def predict(query):
 def partial_fit(query, letter):
     lock.acquire()
     try:
-        classifier.partial_fit(numpy.array([query]), numpy.array([letter]))
+        classifier.partial_fit(numpy.array([query]), numpy.array([letter]), classes=all_letters)
     finally:
         lock.release()
 
@@ -74,7 +74,7 @@ if os.path.isfile(model_save_filename):
     load_classfier(model_save_filename)
     print('Model loaded')
 else:
-    train = read_train_csv('train.tsv')
+    # train = read_train_csv('train.tsv')
     # scaler = preprocessing.StandardScaler().fit(train['data'])
     # classifier = OneVsOneClassifier(sklearn.svm.LinearSVC(penalty='l1', dual=False))
     classifier = sklearn.linear_model.SGDClassifier()
@@ -83,8 +83,8 @@ else:
     # classifier = DecisionTreeClassifier(random_state=13)
     # classifier.fit( scaler.transform(train['data']), train['labels'])
     all_letters = numpy.array([chr(i) for i in range(ord('a'), ord('z')+1)])
-    for i in range(1):
-        classifier.partial_fit( train['data'], train['labels'], classes=all_letters)
+    # for i in range(1):
+    #     classifier.partial_fit( train['data'], train['labels'], classes=all_letters)
     # classifier.fit(train['data'][0::2], train['labels'][0::2])
 # for real, predicted in zip(train['labels'][1::2], classifier.predict(train['data'][1::2])):
 #     print(real, predicted)
