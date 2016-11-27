@@ -69,7 +69,7 @@ class S(BaseHTTPRequestHandler):
         params = urllib.parse.parse_qs(uri.query)
         query_array = params.get('q')
         
-        if query_array == None || len(query_array) == 0:
+        if query_array == None or len(query_array) == 0:
         	self.send_response(400)
         	self.end_headers()
         	return
