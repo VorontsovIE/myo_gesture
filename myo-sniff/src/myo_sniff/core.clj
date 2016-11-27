@@ -74,7 +74,7 @@
 
 (defn start-web!
   [endpoint]
-  (let [[input-ch out-ch] (e/start-consumer endpoint 15)
+  (let [[input-ch out-ch] (e/start-consumer endpoint 10)
         server (web/websocket-consumer out-ch)
         socket (socket (put-chan input-ch))]
     (ws/send-msg socket stream-emg->enabled)
@@ -91,5 +91,5 @@
   (stop! token))
 
 '(let [token (start-web! e/learn-endpoint)]
-   (Thread/sleep (* 3 1000))
+   (Thread/sleep (* 7 1000))
    (stop! token))

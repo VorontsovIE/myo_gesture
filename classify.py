@@ -54,7 +54,7 @@ def partial_fit(query, letter):
     global fitting_iter
     lock.acquire()
     try:
-        if len(data_buffer) < 15:
+        if len(data_buffer) < 25:
             data_buffer.append(query)
             label_buffer.append(letter)
         else:
@@ -63,7 +63,7 @@ def partial_fit(query, letter):
             label_buffer[index] = letter
         classifier.partial_fit(numpy.array([query]), numpy.array([letter]), classes=all_letters)
         fitting_iter += 1
-        if fitting_iter % 10 == 0:
+        if fitting_iter % 5 == 0:
             classifier.partial_fit(numpy.array(data_buffer), numpy.array(label_buffer), classes=all_letters)
     finally:
         lock.release()
