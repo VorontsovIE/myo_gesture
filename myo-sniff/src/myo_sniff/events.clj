@@ -9,7 +9,7 @@
 
 ;; Settings
 
-(def predict-endpoint "q")
+(def predict-endpoint "predict")
 (def learn-endpoint "learn")
 
 (defn exec-ml
@@ -158,4 +158,4 @@
     clojure.string/split-lines
     (a/onto-chan input-chan))))
 
-(run-file->websocket "myo.log")
+;; (run-file->websocket "myo.log")
