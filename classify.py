@@ -29,10 +29,10 @@ def read_unlabeled_csv(filename):
 
 train = read_train_csv('train.tsv')
 # scaler = preprocessing.StandardScaler().fit(train['data'])
-# classifier = OneVsOneClassifier(sklearn.svm.LinearSVC(penalty='l1', dual=False))
+classifier = OneVsOneClassifier(sklearn.svm.LinearSVC(penalty='l1', dual=False))
 # classifier = sklearn.svm.LinearSVC(penalty='l1', dual=False)
 # classifier = sklearn.neighbors.KNeighborsClassifier(p=1, n_neighbors=3)
-classifier = DecisionTreeClassifier(random_state=13)
+# classifier = DecisionTreeClassifier(random_state=13)
 # classifier.fit( scaler.transform(train['data']), train['labels'])
 for i in range(1):
 	classifier.fit( train['data'], train['labels'])
