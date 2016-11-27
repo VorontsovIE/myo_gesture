@@ -7,8 +7,27 @@
 
             [myo-sniff.web :as web]))
 
+;; Settings
+
 (def predict-endpoint "q")
 (def learn-endpoint "learn")
+
+(defn exec-ml
+  [vec endpoint]
+  (let [q (->
+           vec
+           json/encode
+           (str/replace #"\[" "%5B")
+           (str/replace #"\]" "%5D"))
+        url (str "http://localhost:8000/?" endpoint "=" q)
+        {:keys [status headers body error] :as resp} @(http/get url)]
+    (if error
+      (println "Failed '" url "', exception: " error)
+      (do
+        (println "received " body)
+        body))))
+
+;; Need to use it, TODO: use in xform
 
 (defn remove-duplicates
   [xs]
@@ -17,6 +36,8 @@
    (group-by :timestamp)
    vals
    (map first)))
+
+;; xform events pre-aggregation
 
 (defn conj-slide
   [xs x limit]
@@ -66,25 +87,36 @@
    (map (partial reduce sum-vec))
    ))
 
-(defn exec-ml
-  [vec endpoint]
-  (let [q (->
-           vec
-           json/encode
-           (str/replace #"\[" "%5B")
-           (str/replace #"\]" "%5D"))
-        url (str "http://localhost:8000/?" endpoint "=" q)
-        {:keys [status headers body error] :as resp} @(http/get url)]
-    (if error
-      (println "Failed '" url "', exception: " error)
-      (do
-        (println "received " body)
-        body))))
+;; xform letters post-aggregation
+
+(def safe-inc (fnil inc 0))
+
+(defn update-frequences
+  [[dictionary result] new-letter threshold]
+  (let [state* (update dictionary new-letter safe-inc)]
+    (if-let [out-l (some (fn [[l fq]] (when (= fq threshold) l)) state*)]
+      [{} out-l]
+      [state* nil])))
+
+(defn filter-letters
+  [threshold]
+  (fn [xf]
+    (let [state (volatile! [{} nil])]
+      (fn
+        ([] xf)
+        ([result] (xf result))
+        ([result input]
+         (let [[new-state out-l] (vswap! state update-frequences input threshold)]
+           (if out-l
+             (xf result out-l)
+             result)))))))
+
+;; input consumer
 
 (defn start-consumer
-  [endpoint]
+  [endpoint letters-threshold]
   (let [g-chan (a/chan 10 group-events-xform)
-        r-chan (a/chan 10)]
+        r-chan (a/chan 10 (filter-letters letters-threshold))]
     (a/go-loop []
       (if-let [grouped (<! g-chan)]
         (do
@@ -94,6 +126,8 @@
           (a/close! r-chan)
           (prn :g-loop-closed))))
     [g-chan r-chan]))
+
+;; dumb output to file consumer
 
 (defn file-consumer
   [r-chan]
@@ -112,9 +146,11 @@
                 " s"))
           (.close w))))))
 
+;; for debug: input from file, to websocket
+
 (defn run-file->websocket
   [file]
-  (let [[input-chan r-chan] (start-consumer predict-endpoint)]
+  (let [[input-chan r-chan] (start-consumer predict-endpoint 15)]
    (web/websocket-consumer r-chan)
    (Thread/sleep (* 5 1000))
    (->>
@@ -122,4 +158,4 @@
     clojure.string/split-lines
     (a/onto-chan input-chan))))
 
-;; (run-file->websocket "myo.log")
+(run-file->websocket "myo.log")

@@ -1,12 +1,12 @@
 var WS_SERVER_URL = 'ws://localhost:8080';
 
 var letterNode = document.getElementsByClassName('b-letter')[0];
-var lastLetter = '';
+var lastLetter = '>';
 
 function setLetter(l) {
     if (l != lastLetter) {
         lastLetter = l;
-        letterNode.innerHTML = l.toUpperCase();
+        letterNode.innerHTML += l.toUpperCase();
     }
 }
 
