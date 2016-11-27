@@ -24,7 +24,6 @@ function setOnline() {
 }
 
 function setOffline() {
-    eraseLetter();
     $statusNode.removeClass('label-success');
     $statusNode.addClass('label-default');
     $statusNode.text('offline');

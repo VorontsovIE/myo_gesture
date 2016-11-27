@@ -67,7 +67,14 @@ class S(BaseHTTPRequestHandler):
     def do_GET(self):
         uri = urllib.parse.urlparse(self.path)
         params = urllib.parse.parse_qs(uri.query)
-        query = json.loads(params['q'][0])
+        query_array = params.get('q')
+        
+        if query_array == None || len(query_array) == 0:
+        	self.send_response(400)
+        	self.end_headers()
+        	return
+
+        query = json.loads(query_array[0])
         message = predict(query)
 
         print(str(query) + " => " + message)
