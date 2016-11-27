@@ -113,10 +113,10 @@
   [file]
   (let [[input-chan r-chan] (start-consumer)]
    (web/websocket-consumer r-chan)
-   (Thread/sleep (* 2 1000))
+   (Thread/sleep (* 5 1000))
    (->>
     (slurp file)
     clojure.string/split-lines
     (a/onto-chan input-chan))))
 
-(comment (run-file->websocket "myo.clj"))
+;; (run-file->websocket "myo.log")
