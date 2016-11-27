@@ -15,6 +15,7 @@ Using:
  - Clojure based WebSocket client, preparing & pre-aggregating data, send it to python web server with machine learning model to predict char, and after getting model response, forward it to WebSocket server, who broadcast it to js clients
  - Python (pandas) based web service with machine learning model, can predict chars from events
  - Javascript based web app, listen WebSocket with recognized chars and render it on screen
+ - Sign language pictures from https://en.wikipedia.org/wiki/American_manual_alphabet
 
 ## Challenges we ran into
 

@@ -1,7 +1,9 @@
 (ns myo-sniff.events
   (:require [cheshire.core :as json]
             [clojure.core.async :as a :refer [go >! <! >!! <!!]]
-            [clojure.java.io :as io]))
+            [clojure.java.io :as io]
+            [org.httpkit.client :as http]
+            [clojure.string :as str]))
 
 (defn remove-duplicates
   [xs]
@@ -61,12 +63,18 @@
 
 (defn predict
   [vec]
-  (Thread/sleep 100)
-  (->>
-   (rand-int 3)
-   {0 "a"
-    1 "b"
-    2 "n"}))
+  (let [q (->
+           vec
+           json/encode
+           (str/replace #"\[" "%5B")
+           (str/replace #"\]" "%5D"))
+        url (str "http://localhost:8000/?q=" q)
+        {:keys [status headers body error] :as resp} @(http/get url)]
+    (if error
+      (println "Failed '" url "', exception: " error)
+      (do
+        (println "received " body)
+        body))))
 
 (defn start-consumer
   []
@@ -80,42 +88,29 @@
         (do
           (a/close! r-chan)
           (prn :g-loop-closed))))
-    (let [w (io/writer "out.txt")
-          start (System/currentTimeMillis)]
-      (a/go-loop []
-        (if-let [result (<! r-chan)]
-          (do
-            (.write w (str result "\n"))
-            (recur))
-          (do
-            (prn :r-loop-closed)
-            (prn (str
-                  "Elapsed: "
-                  (/ (- (System/currentTimeMillis) start) 1000.0)
-                  " s"))
-            (.close w)))))
     [g-chan r-chan]))
 
-(comment (let [[input-chan _] (start-consumer)]
+(defn file-consumer
+  [r-chan]
+  (let [w (io/writer "out.txt")
+        start (System/currentTimeMillis)]
+    (a/go-loop []
+      (if-let [result (<! r-chan)]
+        (do
+          (.write w (str result "\n"))
+          (recur))
+        (do
+          (prn :r-loop-closed)
+          (prn (str
+                "Elapsed: "
+                (/ (- (System/currentTimeMillis) start) 1000.0)
+                " s"))
+          (.close w))))))
+
+(comment (let [[input-chan r-chan] (start-consumer)]
+   (file-consumer r-chan)
    (->>
     (slurp "myo.log")
     clojure.string/split-lines
     (a/onto-chan input-chan)
     )))
-
-(comment (->>
-  (slurp "myo.log")
-  clojure.string/split-lines
-  (take 100)
-  (into [] group-events-xform)
-  ;;remove-duplicates
-  ;; remove-between-locks
-  ;; (filter #(-> % :type (= "emg")))
-  (take 30)
-  clojure.pprint/pprint
-  ;;(map #(concat [(Long. (:timestamp %))] (:emg %)))
-  ;;(write-csv "a.sher.csv" headers)
-  ))
-
-
-

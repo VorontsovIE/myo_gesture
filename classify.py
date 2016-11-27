@@ -7,6 +7,10 @@ from sklearn import preprocessing
 from sklearn.multiclass import OneVsOneClassifier
 from sklearn.multiclass import OneVsRestClassifier
 
+import urllib.parse
+import json
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
 def read_train_csv(filename):
 	with open(filename) as f:
 		data = []
@@ -40,9 +44,47 @@ for i in range(1):
 # for real, predicted in zip(train['labels'][1::2], classifier.predict(train['data'][1::2])):
 # 	print(real, predicted)
 
-to_predict = read_unlabeled_csv('unlabbeled.tsv')
+# to_predict = read_unlabeled_csv('unlabbeled.tsv')
 # for predicted in classifier.predict(scaler.transform(to_predict)):
 # 	print(predicted)
 
-for predicted in classifier.predict(to_predict):
-	print(predicted)
+# for predicted in classifier.predict(to_predict):
+# 	print(predicted)
+
+def predict(query):
+	return classifier.predict(numpy.array([query]))[0]
+
+
+# Web server
+
+
+class S(BaseHTTPRequestHandler):
+    def _set_headers(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.end_headers()
+
+    def do_GET(self):
+        uri = urllib.parse.urlparse(self.path)
+        params = urllib.parse.parse_qs(uri.query)
+        query = json.loads(params['q'][0])
+        message = predict(query)
+
+        print(str(query) + " => " + message)
+
+        self._set_headers()
+        self.wfile.write(bytes(message, "utf8"))
+        
+def run(server_class=HTTPServer, handler_class=S, port=8000):
+    server_address = ('', port)
+    httpd = server_class(server_address, handler_class)
+    print("Starting httpd...")
+    httpd.serve_forever()
+
+if __name__ == "__main__":
+    from sys import argv
+
+    if len(argv) == 2:
+        run(port=int(argv[1]))
+    else:
+        run()
