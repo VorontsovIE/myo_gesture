@@ -45,9 +45,9 @@
 (def locking-policy->none (->command "set_locking_policy" {:type "none"}))
 
 (defn start!
-  []
-  (let [file "../samples/b/raw-5s.log"
-        _ (open-writer! file true)
+  [folder id]
+  (let [file (str "../samples/" folder "/" id ".log")
+        _ (open-writer! file false)
         [input-ch _] (e/start-consumer)
         socket (ws/connect "ws://127.0.0.1:10138/myo/3"
                            :on-receive (put-file))]
@@ -62,8 +62,8 @@
   (close-writer!)
   (a/close! input-ch))
 
-(comment (let [token (start!)]
-   (Thread/sleep (* 5 1000))
+(comment (let [token (start! "seq" "r-b-c-a-5s-ilya-2")]
+   (Thread/sleep (* 20 1000))
    (stop! token)))
 
 (defn write-csv
