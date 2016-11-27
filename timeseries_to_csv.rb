@@ -54,8 +54,13 @@ class Array
   end
 
   def to_pvalues
-    each_with_index.sort_by{|val, ind| val }.each_with_index.sort_by{|(val, ind), sorted_ind| ind }.map{|(val, ind), sorted_ind| sorted_ind.to_f / size }
+    ranks.map{|rank| rank.to_f / size }
   end
+
+  def ranks
+    each_with_index.sort_by{|val, ind| val }.each_with_index.sort_by{|(val, ind), sorted_ind| ind }.map{|(val, ind), sorted_ind| sorted_ind }
+  end
+
 end
 
 
@@ -99,10 +104,9 @@ emg_timestamps = emg_events.map(&:timestamp)
 
 sensor_tracks = emg_events.map{|ev| ev.data[:emg].map(&:abs) }.transpose
 
-
 # if filter 
   sensor_tracks = sensor_tracks
-                    # .map{|series| series.each_cons(60).map{|elems| elems.sum } }
+                    .map{|series| series.each_cons(60).map{|elems| elems.mean_geometric } }
                     # .map{|series| series.median_filter(9) }
                     # .map{|series| series.each_cons(5).map{|elems| elems.mean_geometric} }
                     # .map{|series| series.truncate(lower_threshold: series.quantile(0.6)) } 
@@ -110,14 +114,17 @@ sensor_tracks = emg_events.map{|ev| ev.data[:emg].map(&:abs) }.transpose
 
 sensor_tracks
   .map{|series|
-    series
+    # series
     series.each_slice(30).each_cons(3).map(&:flatten).map(&:sum) # 900ms with 300ms shifts
     # series.each_slice(60).map(&:sum).each_cons(3).to_a # 900ms with 300ms shifts
   }
   .transpose
-  .each_with_index{|tracks_snapshot, ind|
+  .map{|tracks_snapshot|
     tracks_snapshot = tracks_snapshot.flatten
     tracks_snapshot = tracks_snapshot.normalized
+    # tracks_snapshot = tracks_snapshot.ranks # ranks of sensor magnitudes instead of values
+  } #.transpose.map{|series| series.each_cons(3).map(&:median) }.transpose
+  .each{|tracks_snapshot|
     # tracks_snapshot = [*tracks_snapshot.normalized, tracks_snapshot.l2_norm, tracks_snapshot.l1_norm]
     if letter_label
       puts [*tracks_snapshot, letter_label].join("\t")

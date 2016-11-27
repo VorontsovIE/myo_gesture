@@ -28,11 +28,19 @@ rm samples/*/*.tsv
 
 # ruby timeseries_to_csv.rb  samples/a/raw-30s.log a  >  samples/a/raw-30s.tsv
 # ruby timeseries_to_csv.rb  samples/b/raw-30s.log b  >  samples/b/raw-30s.tsv
-ruby timeseries_to_csv.rb  samples/a/raw-60s.log a  >  samples/a/raw-60s.tsv
-ruby timeseries_to_csv.rb  samples/b/raw-60s.log b  >  samples/b/raw-60s.tsv
+# ruby timeseries_to_csv.rb  samples/a/raw-60s.log a  >  samples/a/raw-60s.tsv
+# ruby timeseries_to_csv.rb  samples/b/raw-60s.log b  >  samples/b/raw-60s.tsv
 
-for letter in r c; do
-  for i in {1..6}; do
+# for letter in r; do
+#   for i in {1..6}; do
+#     ruby timeseries_to_csv.rb  samples/${letter}/raw-5s-${i}.log ${letter}  >  samples/${letter}/raw-5s-${i}.tsv
+#   done
+#   cat samples/${letter}/raw-5s-*.tsv > samples/${letter}/raw-5s.tsv
+#   rm samples/${letter}/raw-5s-*.tsv
+# done
+
+for letter in a b c r; do
+  for i in {1..60}; do
     ruby timeseries_to_csv.rb  samples/${letter}/raw-5s-${i}.log ${letter}  >  samples/${letter}/raw-5s-${i}.tsv
   done
   cat samples/${letter}/raw-5s-*.tsv > samples/${letter}/raw-5s.tsv
@@ -47,7 +55,7 @@ done
 # ruby timeseries_to_csv.rb  samples/right/raw.log  r  > samples/right/raw.tsv
 # ruby timeseries_to_csv.rb  samples/nothing-table/raw-30s.log  n  > samples/nothing-table/raw-30s.tsv
 # ruby timeseries_to_csv.rb  samples/nothing-table/raw-60s.log  nt  > samples/nothing-table/raw-60s.tsv
-ruby timeseries_to_csv.rb  samples/nothing-vertical/raw-60s.log  nv  > samples/nothing-vertical/raw-60s.tsv
+# ruby timeseries_to_csv.rb  samples/nothing-vertical/raw-60s.log  nv  > samples/nothing-vertical/raw-60s.tsv
 
 # cat samples/*/raw-{s,d}.tsv > train.tsv
 cat samples/*/*.tsv > train.tsv
