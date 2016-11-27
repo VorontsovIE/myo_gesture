@@ -55,7 +55,7 @@
   [folder id]
   (let [file (str "../samples/" folder "/" id ".log")
         _ (open-writer! file false)
-        [input-ch _] (e/start-consumer)
+        [input-ch _] (e/start-consumer e/predict-endpoint)
         socket (socket (put-file))]
     ;;(ws/send-msg socket locking-policy->none)
     (ws/send-msg socket stream-emg->enabled)
@@ -74,7 +74,7 @@
 
 (defn start-web!
   []
-  (let [[input-ch out-ch] (e/start-consumer)
+  (let [[input-ch out-ch] (e/start-consumer e/predict-endpoint)
         server (web/websocket-consumer out-ch)
         socket (socket (put-chan input-ch))]
     (ws/send-msg socket stream-emg->enabled)

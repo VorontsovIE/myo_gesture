@@ -7,6 +7,9 @@
 
             [myo-sniff.web :as web]))
 
+(def predict-endpoint "q")
+(def learn-endpoint "learn")
+
 (defn remove-duplicates
   [xs]
   (->>
@@ -63,14 +66,14 @@
    (map (partial reduce sum-vec))
    ))
 
-(defn predict
-  [vec]
+(defn exec-ml
+  [vec endpoint]
   (let [q (->
            vec
            json/encode
            (str/replace #"\[" "%5B")
            (str/replace #"\]" "%5D"))
-        url (str "http://localhost:8000/?q=" q)
+        url (str "http://localhost:8000/?" endpoint "=" q)
         {:keys [status headers body error] :as resp} @(http/get url)]
     (if error
       (println "Failed '" url "', exception: " error)
@@ -79,13 +82,13 @@
         body))))
 
 (defn start-consumer
-  []
+  [endpoint]
   (let [g-chan (a/chan 10 group-events-xform)
         r-chan (a/chan 10)]
     (a/go-loop []
       (if-let [grouped (<! g-chan)]
         (do
-          (>! r-chan (predict grouped))
+          (>! r-chan (exec-ml grouped endpoint))
           (recur))
         (do
           (a/close! r-chan)
@@ -111,7 +114,7 @@
 
 (defn run-file->websocket
   [file]
-  (let [[input-chan r-chan] (start-consumer)]
+  (let [[input-chan r-chan] (start-consumer predict-endpoint)]
    (web/websocket-consumer r-chan)
    (Thread/sleep (* 5 1000))
    (->>
