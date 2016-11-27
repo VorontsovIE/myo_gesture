@@ -9,7 +9,7 @@
 
 ;; Settings
 
-(def predict-endpoint "q")
+(def predict-endpoint "predict")
 (def learn-endpoint "learn")
 
 (defn exec-ml

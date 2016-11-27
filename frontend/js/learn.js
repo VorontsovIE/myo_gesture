@@ -1,4 +1,4 @@
-var ML_SEVER_URL = 'http://localhost:8000/?newLetter=';
+var ML_SEVER_URL = 'http://localhost:8000/?set_letter=';
 var STOP_LEARNING_SYMBOL = '.';
 
 function setLetter(letter) {
