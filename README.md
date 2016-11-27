@@ -1,4 +1,4 @@
-# MSLR -- Myo Sign Language Recognition
+# Fingerlang -- Myo Sign Language Recognition
 
 ## Idea
 
@@ -30,7 +30,8 @@ Using:
 
  - 
 
-## What's next for MSLR 
+## What's next for Fingerlang 
 
  - Add all English alphabet to model
  - Improve quality of recognition
+ - Add word dictionaries like in smartphone keyboards to help text entering
