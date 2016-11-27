@@ -67,42 +67,57 @@ def predict(query):
 def partial_fit(query, letter):
     lock.acquire()
     try:
-        classifier.partial_fit(numpy.array([query]), numpy.array(letter))
+        classifier.partial_fit(numpy.array([query]), numpy.array([letter]))
     finally:
         lock.release()
 
 # Web server
 
 
+letter_to_fit = None
+
 class S(BaseHTTPRequestHandler):
+    def vector_from_uri(self, qs):
+        if qs == None or len(qs) == 0:
+            self.send_response(400)
+            self.end_headers()
+        return json.loads(qs[0])
+
     def _set_headers(self):
         self.send_response(200)
         self.send_header('Content-type', 'application/json')
         self.end_headers()
 
+    def return_ok(self, msg='ok\n'):
+        self._set_headers()
+        self.wfile.write(bytes(msg, "utf8"))
+
     def do_GET(self):
+        global letter_to_fit
         uri = urllib.parse.urlparse(self.path)
         params = urllib.parse.parse_qs(uri.query)
-        query_array = params.get('q')
-        if query_array == None or len(query_array) == 0:
+        if len(params.keys()) != 1:
             self.send_response(400)
             self.end_headers()
             return
+        pseudo_endpoint = list(params.keys())[0]
+        if pseudo_endpoint == 'predict':
+            query = self.vector_from_uri( params.get('predict') )
+            if query:
+                message = predict(query)
+                print(message)
+                self.return_ok(msg=message)
+        elif pseudo_endpoint == 'learn':
+            query = self.vector_from_uri( params.get('learn') )
+            if query:
+                if letter_to_fit and ('a' <= letter_to_fit <= 'z'):
+                    partial_fit(query, letter_to_fit)
+                    print(query, '<--', letter_to_fit)
+                self.return_ok()
+        elif pseudo_endpoint == 'set_letter':
+            letter_to_fit = str.lower(params.get('set_letter')[0])
+            self.return_ok()
 
-        query = json.loads(query_array[0])
-        letter = params.get('l')[0]
-        if letter == None: # predict
-            message = predict(query)
-            print(message)
-            self._set_headers()
-            self.wfile.write(bytes(message, "utf8"))
-        else: # learn
-            letter = lower(letter)
-            if 'a' <= letter <= 'z':
-                partial_fit(query, letter)
-            self.send_response(200)
-            self.end_headers()
-            return
 
 def run(server_class=HTTPServer, handler_class=S, port=8000):
     server_address = ('', port)

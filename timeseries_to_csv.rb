@@ -106,7 +106,7 @@ sensor_tracks = emg_events.map{|ev| ev.data[:emg].map(&:abs) }.transpose
 
 # if filter 
   sensor_tracks = sensor_tracks
-                    .map{|series| series.each_cons(60).map{|elems| elems.mean_geometric } }
+                    .map{|series| series.each_cons(11).map{|elems| elems.mean_geometric } }
                     # .map{|series| series.median_filter(9) }
                     # .map{|series| series.each_cons(5).map{|elems| elems.mean_geometric} }
                     # .map{|series| series.truncate(lower_threshold: series.quantile(0.6)) } 
