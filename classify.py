@@ -8,10 +8,13 @@ from sklearn.multiclass import OneVsOneClassifier
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn import linear_model
 from threading import Lock
-
+import pickle
 import urllib.parse
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
+import os.path
+
+model_save_filename = 'sgd_params.bin'
 
 def read_train_csv(filename):
     with open(filename) as f:
@@ -33,29 +36,7 @@ def read_unlabeled_csv(filename):
             data.append(features)
         return numpy.array( data )
 
-train = read_train_csv('train.tsv')
-# scaler = preprocessing.StandardScaler().fit(train['data'])
-# classifier = OneVsOneClassifier(sklearn.svm.LinearSVC(penalty='l1', dual=False))
-classifier = sklearn.linear_model.SGDClassifier()
-# classifier = sklearn.svm.LinearSVC(penalty='l1', dual=False)
-# classifier = sklearn.neighbors.KNeighborsClassifier(p=1, n_neighbors=3)
-# classifier = DecisionTreeClassifier(random_state=13)
-# classifier.fit( scaler.transform(train['data']), train['labels'])
-all_letters = numpy.array([chr(i) for i in range(ord('a'), ord('z')+1)])
-for i in range(1):
-    classifier.partial_fit( train['data'], train['labels'], classes=all_letters)
-# classifier.fit(train['data'][0::2], train['labels'][0::2])
-# for real, predicted in zip(train['labels'][1::2], classifier.predict(train['data'][1::2])):
-#     print(real, predicted)
-
-# to_predict = read_unlabeled_csv('unlabbeled.tsv')
-# for predicted in classifier.predict(scaler.transform(to_predict)):
-#     print(predicted)
-
-# for predicted in classifier.predict(to_predict):
-#     print(predicted)
-
-
+classifier = None
 lock = Lock()
 def predict(query):
     lock.acquire()
@@ -71,7 +52,51 @@ def partial_fit(query, letter):
     finally:
         lock.release()
 
+def save_classfier(filename):
+    lock.acquire()
+    try:
+        with open(filename, 'wb') as fw:
+            pickle.dump(classifier, fw)
+    finally:
+        lock.release()
+
+def load_classfier(filename):
+    global classifier
+    lock.acquire()
+    try:
+        with open(filename, 'rb') as f:
+            classifier = pickle.load(f)
+    finally:
+        lock.release()
 # Web server
+
+if os.path.isfile(model_save_filename):
+    load_classfier(model_save_filename)
+    print('Model loaded')
+else:
+    train = read_train_csv('train.tsv')
+    # scaler = preprocessing.StandardScaler().fit(train['data'])
+    # classifier = OneVsOneClassifier(sklearn.svm.LinearSVC(penalty='l1', dual=False))
+    classifier = sklearn.linear_model.SGDClassifier()
+    # classifier = sklearn.svm.LinearSVC(penalty='l1', dual=False)
+    # classifier = sklearn.neighbors.KNeighborsClassifier(p=1, n_neighbors=3)
+    # classifier = DecisionTreeClassifier(random_state=13)
+    # classifier.fit( scaler.transform(train['data']), train['labels'])
+    all_letters = numpy.array([chr(i) for i in range(ord('a'), ord('z')+1)])
+    for i in range(1):
+        classifier.partial_fit( train['data'], train['labels'], classes=all_letters)
+    # classifier.fit(train['data'][0::2], train['labels'][0::2])
+# for real, predicted in zip(train['labels'][1::2], classifier.predict(train['data'][1::2])):
+#     print(real, predicted)
+
+# to_predict = read_unlabeled_csv('unlabbeled.tsv')
+# for predicted in classifier.predict(scaler.transform(to_predict)):
+#     print(predicted)
+
+# for predicted in classifier.predict(to_predict):
+#     print(predicted)
+
+
 
 
 letter_to_fit = None
@@ -116,6 +141,9 @@ class S(BaseHTTPRequestHandler):
                 self.return_ok()
         elif pseudo_endpoint == 'set_letter':
             letter_to_fit = str.lower(params.get('set_letter')[0])
+            if letter_to_fit == '.':
+                print('Save model')
+                save_classfier(model_save_filename)
             self.return_ok()
 
 
