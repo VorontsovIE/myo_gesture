@@ -65,18 +65,3 @@
 (comment (let [token (start! "seq" "r-b-c-a-5s-ilya-2")]
    (Thread/sleep (* 20 1000))
    (stop! token)))
-
-(defn write-csv
-  [file headers data]
-  (spit file (str (str/join "," headers) "\n"))
-  (with-open [w (io/writer file :append true)]
-   (doseq [row data]
-     (.write w (str (str/join "," row) "\n")))))
-
-(def headers
-  (->>
-  (range 1 9)
-  (map #(str "emg" %))
-  (into [])
-  (concat ["timestamp"])))
-

@@ -3,7 +3,9 @@
             [clojure.core.async :as a :refer [go >! <! >!! <!!]]
             [clojure.java.io :as io]
             [org.httpkit.client :as http]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+
+            [myo-sniff.web :as web]))
 
 (defn remove-duplicates
   [xs]
@@ -107,10 +109,14 @@
                 " s"))
           (.close w))))))
 
-(comment (let [[input-chan r-chan] (start-consumer)]
-   (file-consumer r-chan)
+(defn run-file->websocket
+  [file]
+  (let [[input-chan r-chan] (start-consumer)]
+   (web/websocket-consumer r-chan)
+   (Thread/sleep (* 2 1000))
    (->>
-    (slurp "myo.log")
+    (slurp file)
     clojure.string/split-lines
-    (a/onto-chan input-chan)
-    )))
+    (a/onto-chan input-chan))))
+
+(comment (run-file->websocket "myo.clj"))
